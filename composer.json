@@ -9,6 +9,7 @@
         "ext-iconv": "*",
         "symfony/console": "7.3.*",
         "symfony/dotenv": "7.3.*",
+        "symfony/filesystem": "7.3.*",
         "symfony/flex": "^2",
         "symfony/framework-bundle": "7.3.*",
         "symfony/runtime": "7.3.*",
