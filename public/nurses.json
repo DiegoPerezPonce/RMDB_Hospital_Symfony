@@ -2,26 +2,25 @@
     {
         "id": 1,
         "user": "Raymond",
-        "name":"Raymond",
+        "name": "Raymond",
         "pw": 2006
     },
     {
         "id": 2,
         "user": "Biel",
-        "name":"Biel",
+        "name": "Biel",
         "pw": 2006
     },
     {
         "id": 3,
         "user": "Diego",
-        "name":"Diego",
+        "name": "Diego",
         "pw": 1996
     },
-     
     {
         "id": 4,
         "user": "Maxime",
-        "name":"Maxime",
+        "name": "Maxime",
         "pw": 2005
     }
 ]
