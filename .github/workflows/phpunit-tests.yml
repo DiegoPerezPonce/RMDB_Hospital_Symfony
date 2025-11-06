@@ -1,0 +1,62 @@
+# Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
+name: Pruebas de PHP (CI)
+
+# Define cuándo se ejecutará este flujo de trabajo
+on:
+  # Se ejecuta en cada push a la rama principal (main o master)
+  push:
+    branches: [ "main", "master" ]
+  # Se ejecuta en cada pull request dirigido a la rama principal
+  pull_request:
+    branches: [ "main", "master" ]
+
+# Define los trabajos (jobs) que se ejecutarán
+jobs:
+  # Nombre del trabajo, puedes llamarlo como quieras (ej. phpunit-tests)
+  run-phpunit-tests:
+    # El tipo de máquina virtual en la que se ejecutarán los comandos
+    runs-on: ubuntu-latest
+
+    # Los pasos que se ejecutarán secuencialmente
+    steps:
+      # 1. Clonar el repositorio
+      # Este paso descarga tu código en la máquina virtual de GitHub
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 2. Configurar el entorno de PHP
+      # Utiliza una acción popular para instalar PHP y sus extensiones
+      - name: Configurar PHP con extensiones necesarias
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # Asegúrate de que coincida con la versión de tu proyecto
+          extensions: pdo_sqlite, doctrine # Extensiones comunes para Symfony y Doctrine
+          tools: composer:v2 # Instala Composer v2
+          coverage: none # No necesitamos reportes de cobertura por ahora
+
+      # 3. Cachear las dependencias de Composer
+      # Este paso guarda la carpeta 'vendor' para que las futuras ejecuciones sean más rápidas
+      - name: Cachear dependencias
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      # 4. Instalar las dependencias de Composer
+      # Ejecuta 'composer install' para descargar las librerías del proyecto
+      - name: Instalar dependencias
+        run: composer install --prefer-dist --no-progress
+
+      # 5. Configurar la base de datos de prueba
+      # Symfony usa el fichero .env.test para la configuración de pruebas
+      - name: Crear la base de datos de prueba
+        run: |
+          php bin/console doctrine:database:create --env=test
+          php bin/console doctrine:schema:create --env=test
+
+      # 6. Ejecutar las pruebas de PHPUnit
+      # Este es el comando final que corre tus tests
+      - name: Ejecutar PHPUnit
+        run: ./vendor/bin/phpunit
