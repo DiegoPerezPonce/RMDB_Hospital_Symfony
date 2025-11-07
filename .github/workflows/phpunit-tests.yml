@@ -27,21 +27,16 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      # --- PASO DESACTIVADO TEMPORALMENTE PARA DEPURACIÓN ---
-      # La caché parece estar causando que no se genere el fichero phpunit.
-      # La desactivamos para forzar una instalación limpia.
-      # - name: Cachear dependencias
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: vendor
-      #     key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-php-
+      # --- NUEVO PASO DE DEPURACIÓN ---
+      # Mostramos el contenido de composer.json para asegurarnos de que phpunit está en require-dev.
+      - name: Mostrar contenido de composer.json
+        run: cat composer.json
 
-      # 4. Instalar las dependencias de Composer
-      # Se ejecuta una instalación limpia sin caché.
-      - name: Instalar dependencias de Composer
-        run: composer install --prefer-dist --optimize-autoloader
+      # 4. Instalar dependencias con MÁXIMA VERBOSIDAD
+      # La opción -vvv fuerza a Composer a mostrar cada paso que da.
+      # Esto nos dirá por qué no está instalando las dependencias de desarrollo.
+      - name: Instalar dependencias de Composer (Modo Depuración)
+        run: composer install -vvv --prefer-dist --optimize-autoloader
 
       # 5. Configurar la base de datos de prueba
       - name: Crear la base de datos de prueba
@@ -49,8 +44,8 @@ jobs:
           php bin/console doctrine:database:create --env=test
           php bin/console doctrine:schema:create --env=test
 
-      # 6. Paso de Depuración para verificar si PHPUnit existe
-      - name: Verificar la existencia de PHPUnit
+      # 6. Paso de Depuración para verificar el resultado
+      - name: Verificar el contenido del directorio bin
         run: ls -la vendor/bin
 
       # 7. Ejecutar las pruebas de PHPUnit
