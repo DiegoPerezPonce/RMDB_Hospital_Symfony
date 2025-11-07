@@ -1,26 +1,26 @@
 # Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
-name: Pruebas de PHP (CI)
+name: Pruebas de PHP (CI) - MODO DEPURACIÓN
 
 on:
+  # Se ejecuta en cada push a la rama principal (main o master)
   push:
     branches: [ "main", "master" ]
+  # Se ejecuta en cada pull request dirigido a la rama principal
   pull_request:
     branches: [ "main", "master" ]
 
+# Define los trabajos (jobs) que se ejecutarán
 jobs:
   run-phpunit-tests:
+    # El tipo de máquina virtual en la que se ejecutarán los comandos
     runs-on: ubuntu-latest
-
-    # --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
-    # Se definen las variables de entorno para TODO el trabajo.
     env:
-      # 1. Aseguramos el uso de la base de datos SQLite.
+      # Forzamos la base de datos SQLite.
       DATABASE_URL: "sqlite:///%kernel.project_dir%/var/data.test.db"
-      # 2. Forzamos a Composer a que SÍ instale las dependencias de desarrollo.
-      #    Esto sobreescribe cualquier configuración por defecto del entorno de CI.
+      # Forzamos la instalación de dependencias de desarrollo.
       COMPOSER_NO_DEV: 0
-    # --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
+    # Los pasos que se ejecutarán secuencialmente
     steps:
       # 1. Clonar el repositorio
       - name: Checkout del código
@@ -33,31 +33,36 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, doctrine
           tools: composer:v2
-          coverage: none
 
-      # 3. Cachear dependencias (la reactivamos, ya que no era la causa del problema)
-      - name: Cachear dependencias
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-
+      # ---- INICIO DE PASOS DE DIAGNÓSTICO ----
 
-      # 4. Instalar dependencias de Composer
-      #    Gracias a la variable COMPOSER_NO_DEV: 0, este comando ahora instalará phpunit.
-      - name: Instalar dependencias de Composer
-        run: composer install --prefer-dist --optimize-autoloader
+      # 3. Verificar entorno y diagnosticar Composer
+      - name: PASO DE DIAGNÓSTICO 1 - Verificar Entorno
+        run: |
+          php -v
+          composer --version
+          echo "Ejecutando composer diagnose..."
+          composer diagnose
 
-      # 5. Configurar la base de datos de prueba
+      # 4. Instalar dependencias con MÁXIMA VERBOSIDAD
+      - name: PASO DE DIAGNÓSTICO 2 - Instalar Dependencias (-vvv)
+        # El -vvv fuerza a Composer a mostrar cada detalle de lo que hace.
+        run: composer install -vvv --prefer-dist
+
+      # 5. Verificar el resultado de la instalación
+      - name: PASO DE DIAGNÓSTICO 3 - Verificar Contenido de vendor/bin
+        # Si este paso falla o muestra la carpeta vacía, el problema es 100% el paso anterior.
+        run: |
+          echo "Verificando el contenido de vendor/bin..."
+          ls -la vendor/bin
+      
+      # ---- FIN DE PASOS DE DIAGNÓSTICO ----
+
+      # 6. Configurar la base de datos de prueba
       - name: Crear la base de datos de prueba
         run: |
           php bin/console doctrine:database:create --env=test
           php bin/console doctrine:schema:create --env=test
-
-      # 6. (Opcional) Verificar la existencia de PHPUnit
-      - name: Verificar el contenido del directorio bin
-        run: ls -la vendor/bin
 
       # 7. Ejecutar las pruebas de PHPUnit
       - name: Ejecutar PHPUnit
