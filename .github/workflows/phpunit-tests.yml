@@ -1,5 +1,5 @@
 # Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
-name: Pruebas de PHP (CI) - Versión Final
+name: Pruebas de PHP (CI) - Versión Final Corregida
 
 on:
   push:
@@ -23,9 +23,6 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. Configurar el entorno de PHP
-      # --- INICIO DE LA CORRECCIÓN FINAL ---
-      # Le decimos a la acción que configure Composer correctamente desde el principio,
-      # evitando el problema de las claves públicas y la interactividad.
       - name: Configurar PHP con extensiones necesarias
         uses: shivammathur/setup-php@v2
         with:
@@ -33,7 +30,6 @@ jobs:
           extensions: pdo_sqlite, doctrine
           tools: composer:v2
           coverage: none
-      # --- FIN DE LA CORRERECIÓN FINAL ---
 
       # 3. Cachear dependencias
       - name: Cachear dependencias
@@ -55,5 +51,7 @@ jobs:
           php bin/console doctrine:schema:create --env=test
 
       # 6. Ejecutar las pruebas de PHPUnit
+      # --- CORRECCIÓN FINAL ---
+      # Se eliminan los ```` sobrantes al final del comando.
       - name: Ejecutar PHPUnit
-        run: ./vendor/bin/phpunit```
+        run: ./vendor/bin/phpunit
