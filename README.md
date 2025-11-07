@@ -2,7 +2,7 @@ Rellenar
 # Hospital Nurse Application
 ## _The Last Markdown Editor, Ever_
 
-![N|Solid](https://stucom.com/wp-content/themes/wpt/images/logos/logo.svg)
+![N|Solid](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMATkCzpU-iVkoKvo7_Z1Mp8knNybCIwRhPg&s)
 
 [![Build Status](https://travis-ci.org/joemccann/dillinger.svg?branch=master)](https://travis-ci.org/joemccann/dillinger)
 
