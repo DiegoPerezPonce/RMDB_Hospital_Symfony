@@ -1,6 +1,6 @@
 Rellenar
 # Hospital Nurse Application
-## _The Last Markdown Editor, Ever_
+## _by Raymond, Biel, Diego & Maxime_
 
 ![N|Solid](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQMATkCzpU-iVkoKvo7_Z1Mp8knNybCIwRhPg&s)
 
