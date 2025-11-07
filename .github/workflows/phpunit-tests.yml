@@ -10,8 +10,16 @@ on:
 jobs:
   run-phpunit-tests:
     runs-on: ubuntu-latest
+
+    # --- INICIO DE LA CORRECCIÓN DEFINITIVA ---
+    # Se definen las variables de entorno para TODO el trabajo.
     env:
+      # 1. Aseguramos el uso de la base de datos SQLite.
       DATABASE_URL: "sqlite:///%kernel.project_dir%/var/data.test.db"
+      # 2. Forzamos a Composer a que SÍ instale las dependencias de desarrollo.
+      #    Esto sobreescribe cualquier configuración por defecto del entorno de CI.
+      COMPOSER_NO_DEV: 0
+    # --- FIN DE LA CORRECCIÓN DEFINITIVA ---
 
     steps:
       # 1. Clonar el repositorio
@@ -27,16 +35,19 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      # --- NUEVO PASO DE DEPURACIÓN ---
-      # Mostramos el contenido de composer.json para asegurarnos de que phpunit está en require-dev.
-      - name: Mostrar contenido de composer.json
-        run: cat composer.json
+      # 3. Cachear dependencias (la reactivamos, ya que no era la causa del problema)
+      - name: Cachear dependencias
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
 
-      # 4. Instalar dependencias con MÁXIMA VERBOSIDAD
-      # La opción -vvv fuerza a Composer a mostrar cada paso que da.
-      # Esto nos dirá por qué no está instalando las dependencias de desarrollo.
-      - name: Instalar dependencias de Composer (Modo Depuración)
-        run: composer install -vvv --prefer-dist --optimize-autoloader
+      # 4. Instalar dependencias de Composer
+      #    Gracias a la variable COMPOSER_NO_DEV: 0, este comando ahora instalará phpunit.
+      - name: Instalar dependencias de Composer
+        run: composer install --prefer-dist --optimize-autoloader
 
       # 5. Configurar la base de datos de prueba
       - name: Crear la base de datos de prueba
@@ -44,7 +55,7 @@ jobs:
           php bin/console doctrine:database:create --env=test
           php bin/console doctrine:schema:create --env=test
 
-      # 6. Paso de Depuración para verificar el resultado
+      # 6. (Opcional) Verificar la existencia de PHPUnit
       - name: Verificar el contenido del directorio bin
         run: ls -la vendor/bin
 
