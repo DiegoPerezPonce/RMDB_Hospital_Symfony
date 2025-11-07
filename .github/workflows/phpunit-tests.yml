@@ -1,28 +1,18 @@
 # Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
 name: Pruebas de PHP (CI)
 
-# Define cuándo se ejecutará este flujo de trabajo
 on:
-  # Se ejecuta en cada push a la rama principal (main o master)
   push:
     branches: [ "main", "master" ]
-  # Se ejecuta en cada pull request dirigido a la rama principal
   pull_request:
     branches: [ "main", "master" ]
 
-# Define los trabajos (jobs) que se ejecutarán
 jobs:
-  # Nombre del trabajo, puedes llamarlo como quieras (ej. phpunit-tests)
   run-phpunit-tests:
-    # El tipo de máquina virtual en la que se ejecutarán los comandos
     runs-on: ubuntu-latest
-
-    # Se define explícitamente la variable de entorno DATABASE_URL para este trabajo.
-    # Esto asegura que se use una base de datos SQLite para las pruebas.
     env:
       DATABASE_URL: "sqlite:///%kernel.project_dir%/var/data.test.db"
 
-    # Los pasos que se ejecutarán secuencialmente
     steps:
       # 1. Clonar el repositorio
       - name: Checkout del código
@@ -37,17 +27,19 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      # 3. Cachear las dependencias de Composer
-      - name: Cachear dependencias
-        uses: actions/cache@v4
-        with:
-          path: vendor
-          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-php-
+      # --- PASO DESACTIVADO TEMPORALMENTE PARA DEPURACIÓN ---
+      # La caché parece estar causando que no se genere el fichero phpunit.
+      # La desactivamos para forzar una instalación limpia.
+      # - name: Cachear dependencias
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: vendor
+      #     key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-php-
 
       # 4. Instalar las dependencias de Composer
-      # Se usa un comando robusto para asegurar que se instalan las dependencias de desarrollo (dev).
+      # Se ejecuta una instalación limpia sin caché.
       - name: Instalar dependencias de Composer
         run: composer install --prefer-dist --optimize-autoloader
 
@@ -57,7 +49,7 @@ jobs:
           php bin/console doctrine:database:create --env=test
           php bin/console doctrine:schema:create --env=test
 
-      # 6. (NUEVO) Paso de Depuración para verificar si PHPUnit existe
+      # 6. Paso de Depuración para verificar si PHPUnit existe
       - name: Verificar la existencia de PHPUnit
         run: ls -la vendor/bin
 
