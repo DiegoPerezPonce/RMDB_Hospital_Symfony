@@ -17,13 +17,11 @@ jobs:
     # El tipo de máquina virtual en la que se ejecutarán los comandos
     runs-on: ubuntu-latest
 
-    # --- INICIO DE LA CORRECCIÓN ---
     # Se define explícitamente la variable de entorno DATABASE_URL para este trabajo.
     # Esto asegura que se use una base de datos SQLite para las pruebas,
     # y tiene prioridad sobre cualquier "Secret" de GitHub con el mismo nombre.
     env:
       DATABASE_URL: "sqlite:///%kernel.project_dir%/var/data.test.db"
-    # --- FIN DE LA CORRECCIÓN ---
 
     # Los pasos que se ejecutarán secuencialmente
     steps:
@@ -53,9 +51,10 @@ jobs:
             ${{ runner.os }}-php-
 
       # 4. Instalar las dependencias de Composer
-      # Ejecuta 'composer install' para descargar las librerías del proyecto
+      # Se añade --optimize-autoloader para asegurar que Composer genere los
+      # ficheros ejecutables (como phpunit) correctamente, incluso al usar la caché.
       - name: Instalar dependencias
-        run: composer install --prefer-dist --no-progress
+        run: composer install --prefer-dist --no-progress --optimize-autoloader
 
       # 5. Configurar la base de datos de prueba
       # Symfony usa la variable de entorno definida arriba para la configuración de pruebas
@@ -65,6 +64,6 @@ jobs:
           php bin/console doctrine:schema:create --env=test
 
       # 6. Ejecutar las pruebas de PHPUnit
-      # Este es el comando final que corre tus tests (corregido)
+      # Este es el comando final que corre tus tests
       - name: Ejecutar PHPUnit
         run: ./vendor/bin/phpunit
