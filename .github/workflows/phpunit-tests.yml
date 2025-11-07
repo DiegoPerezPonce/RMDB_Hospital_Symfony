@@ -1,21 +1,27 @@
 # Nombre del flujo de trabajo que aparecerá en la pestaña "Actions" de GitHub
-name: Pruebas de PHP (CI)
+name: Pruebas de PHP (CI) - Versión Definitiva
 
+# Define cuándo se ejecutará este flujo de trabajo
 on:
-  # Se ejecuta en cada push a la rama principal (main o master)
   push:
     branches: [ "main", "master" ]
-  # Se ejecuta en cada pull request dirigido a la rama principal
   pull_request:
     branches: [ "main", "master" ]
 
+# Define los trabajos (jobs) que se ejecutarán
 jobs:
   run-phpunit-tests:
+    # El tipo de máquina virtual en la que se ejecutarán los comandos
     runs-on: ubuntu-latest
+
+    # Se definen las variables de entorno para TODO el trabajo.
     env:
+      # 1. Aseguramos el uso de la base de datos SQLite para las pruebas.
       DATABASE_URL: "sqlite:///%kernel.project_dir%/var/data.test.db"
+      # 2. Forzamos a Composer a que SÍ instale las dependencias de desarrollo (soluciona el problema de fondo).
       COMPOSER_NO_DEV: 0
 
+    # Los pasos que se ejecutarán secuencialmente
     steps:
       # 1. Clonar el repositorio
       - name: Checkout del código
@@ -28,28 +34,36 @@ jobs:
           php-version: '8.2'
           extensions: pdo_sqlite, doctrine
           tools: composer:v2
+          coverage: none # Optimización para no generar reportes de cobertura
 
-      # --- INICIO DE LA CORRECCIÓN FINAL ---
       # 3. Actualizar las claves de seguridad de Composer
-      #    Este paso soluciona el error "Checking pubkeys: FAIL".
+      #    Este es el paso CRÍTICO que soluciona el error "Checking pubkeys: FAIL".
       - name: Actualizar Claves Públicas de Composer
         run: composer self-update --update-keys
-      # --- FIN DE LA CORRECCIÓN FINAL ---
 
-      # 4. Instalar dependencias de Composer
+      # 4. Cachear dependencias (se reactiva para que las ejecuciones sean más rápidas)
+      - name: Cachear dependencias
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-
+
+      # 5. Instalar dependencias de Composer
       - name: Instalar dependencias de Composer
         run: composer install --prefer-dist --optimize-autoloader
 
-      # 5. Configurar la base de datos de prueba
+      # 6. Configurar la base de datos de prueba
       - name: Crear la base de datos de prueba
         run: |
           php bin/console doctrine:database:create --env=test
           php bin/console doctrine:schema:create --env=test
 
-      # 6. Verificar la existencia de PHPUnit (lo dejamos como buena práctica)
+      # 7. (Opcional) Verificar la existencia de PHPUnit
       - name: Verificar el contenido del directorio bin
         run: ls -la vendor/bin
 
-      # 7. Ejecutar las pruebas de PHPUnit
+      # 8. Ejecutar las pruebas de PHPUnit
       - name: Ejecutar PHPUnit
         run: ./vendor/bin/phpunit
