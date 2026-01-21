@@ -2,185 +2,143 @@
 
 namespace App\Controller;
 
+use App\Entity\Nurse;
+use App\Repository\NurseRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Filesystem\Filesystem;
-use Psr\Log\LoggerInterface; // We import LoggerInterface
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/nurse')]
 final class NurseController extends AbstractController
 {
-    private const NURSES_FILE = __DIR__ . '/../../public/nurses.json'; // We define the nurses file path
+    private EntityManagerInterface $entityManager;
+    private NurseRepository $nurseRepository;
+    private LoggerInterface $logger;
 
-    private LoggerInterface $logger; // We declare our logger property
-
-    // We inject the logger service into our constructor
-    public function __construct(LoggerInterface $logger)
-    {
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        NurseRepository $nurseRepository,
+        LoggerInterface $logger
+    ) {
+        $this->entityManager = $entityManager;
+        $this->nurseRepository = $nurseRepository;
         $this->logger = $logger;
     }
 
-    // We load the nurses data from the JSON file.
-    // We return an array of nurse data, or an empty array if invalid.
-    private function loadNurses(): array
-    {
-        $filePath = $this->getParameter('kernel.project_dir') . '/public/nurses.json';
-
-        if (!file_exists($filePath)) {
-            $this->logger->warning('We could not find the nurses file: ' . $filePath);
-            return [];
-        }
-
-        $fileContent = file_get_contents($filePath);
-        if ($fileContent === false) {
-            $this->logger->error('We failed to read the nurses file: ' . $filePath);
-            return [];
-        }
-
-        $data = json_decode($fileContent, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->logger->error('We failed to decode nurses JSON from ' . $filePath . ': ' . json_last_error_msg());
-            return [];
-        }
-
-        return $data ?? [];
-    }
-    
-    // We save the nurses array to the JSON file.
-    // Returns true on success, false on failure.
-    private function saveNurses(array $nurses): bool
-    {
-        $filePath = $this->getParameter('kernel.project_dir') . '/public/nurses.json';
-        
-        $jsonData = json_encode($nurses, JSON_PRETTY_PRINT);
-        
-        if (file_put_contents($filePath, $jsonData) === false) {
-            $this->logger->error('We failed to write to the nurses file: ' . $filePath);
-            return false;
-        }
-        
-        return true;
-    }
-
-    // We create a new nurse.
-    // We return the new nurse's data on success, or an error.
+    // Create a new nurse in the database
     #[Route('/create', name: 'nurse_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
-        // We validate that 'user' and 'pw' are provided.
         if (!isset($data['user']) || !isset($data['pw'])) {
-            return $this->json(['error' => 'We are missing required fields: user and pw.'], Response::HTTP_BAD_REQUEST);
+            return $this->json(['error' => 'Missing required fields: user and pw.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $nurses = $this->loadNurses();
-
-        // We check if a nurse with this username already exists.
-        foreach ($nurses as $nurse) {
-            if (isset($nurse['user']) && strcasecmp($nurse['user'], $data['user']) === 0) {
-                return $this->json(['error' => 'A nurse with this username already exists.'], Response::HTTP_CONFLICT);
-            }
+        // Check if user already exists
+        $existingNurse = $this->nurseRepository->findOneBy(['user' => $data['user']]);
+        if ($existingNurse) {
+            return $this->json(['error' => 'A nurse with this username already exists.'], Response::HTTP_CONFLICT);
         }
-        
-        // We create the new nurse. Any additional data from the request is included.
-        $newNurse = $data;
 
-        // We add the new nurse to our list.
-        $nurses[] = $newNurse;
+        $nurse = new Nurse();
+        $nurse->setUser($data['user']);
+        $nurse->setPw($data['pw']); // In a real app, use password hashing
+        $nurse->setName($data['name'] ?? $data['user']);
+        $nurse->setTitle($data['title'] ?? 'Nurse');
+        $nurse->setSpecialty($data['specialty'] ?? 'General');
+        $nurse->setDescription($data['description'] ?? '');
+        $nurse->setLocation($data['location'] ?? 'Unknown');
+        $nurse->setAvailability($data['availability'] ?? 'Available');
+        $nurse->setImage($data['image'] ?? null);
 
-        // We save the updated list of nurses.
-        if (!$this->saveNurses($nurses)) {
-            return $this->json(['error' => 'We failed to save the new nurse.'], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-        
-        // For security, we do not return the password in the response.
-        unset($newNurse['pw']);
+        $this->entityManager->persist($nurse);
+        $this->entityManager->flush();
 
-        return $this->json($newNurse, Response::HTTP_CREATED);
+        return $this->json($this->mapNurseToArray($nurse), Response::HTTP_CREATED);
     }
 
-    // We find a nurse by their username.
-    // We return nurse data if found, or an error message.
+    // Find a nurse by username
     #[Route('/name/{name}', name: 'nurse_find_by_name', methods: ['GET'])]
     public function findByName(string $name): JsonResponse
     {
-        $nurses = $this->loadNurses();
+        $nurse = $this->nurseRepository->findOneBy(['user' => $name]);
 
-        foreach ($nurses as $nurse) {
-            if (isset($nurse['user']) && strcasecmp($nurse['user'], $name) === 0) {
-                return $this->json($nurse, Response::HTTP_OK);
-            }
+        if (!$nurse) {
+            return $this->json(['error' => 'Nurse not found'], Response::HTTP_NOT_FOUND);
         }
 
-        return $this->json(['error' => 'We could not find the nurse'], Response::HTTP_NOT_FOUND);
+        return $this->json($this->mapNurseToArray($nurse), Response::HTTP_OK);
     }
 
-    // We retrieve all nurses.
-    // We return a list of all nurses.
+    // Retrieve all nurses or filter by query parameters (Search functionality)
     #[Route('/index', name: 'nurse_getAll', methods: ['GET'])]
-    public function getAll(): JsonResponse
+    public function getAll(Request $request): JsonResponse
     {
-        $nurses = $this->loadNurses(); // We use our existing loadNurses method
+        $name = $request->query->get('name');
+        $specialty = $request->query->get('specialty');
+        $location = $request->query->get('location');
+        $availability = $request->query->get('availability');
 
-        return new JsonResponse(data: $nurses, status: Response::HTTP_OK);
+        if ($name || $specialty || $location || $availability) {
+            $nurses = $this->nurseRepository->findFiltered($name, $specialty, $location, $availability);
+        } else {
+            $nurses = $this->nurseRepository->findAll();
+        }
+
+        $data = array_map([$this, 'mapNurseToArray'], $nurses);
+
+        return $this->json($data, Response::HTTP_OK);
     }
 
-    // We handle user login.
-    // We return a success message on valid credentials, or an error.
+    // Handle user login
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function login(Request $request): JsonResponse
     {
-        // We decode the JSON content from the request.
         $data = json_decode($request->getContent(), true);
 
-        // We validate if the JSON content is valid.
         if (json_last_error() !== JSON_ERROR_NONE) {
-            $this->logger->warning('We received invalid JSON content during a login attempt.', ['json_error' => json_last_error_msg()]);
-            return $this->json(
-                ['success' => false, 'message' => 'We received invalid JSON content.'],
-                Response::HTTP_BAD_REQUEST
-            );
+            return $this->json(['success' => false, 'message' => 'Invalid JSON content.'], Response::HTTP_BAD_REQUEST);
         }
 
-        // We get 'user' and 'pw' from the data.
         $user = $data['user'] ?? null;
         $pw = $data['pw'] ?? null;
 
-        // We verify that 'user' and 'pw' are provided.
         if (!$user || !$pw) {
-            $this->logger->warning('We are missing user or password in the login request.', ['provided_data' => $data]);
-            return $this->json(
-                ['success' => false, 'message' => 'We are missing user or pw in the request.'],
-                Response::HTTP_BAD_REQUEST
-            );
+            return $this->json(['success' => false, 'message' => 'Missing credentials.'], Response::HTTP_BAD_REQUEST);
         }
 
-        $nurses = $this->loadNurses();
+        $nurse = $this->nurseRepository->findOneBy(['user' => $user, 'pw' => $pw]);
 
-        // We iterate through each nurse to find a match.
-        foreach ($nurses as $nurse) {
-            // We check if user and password match.
-            if (isset($nurse['user']) && isset($nurse['pw']) &&
-                $nurse['user'] === $user && $nurse['pw'] === $pw) {
-                // Login successful.
-                $this->logger->info('We successfully logged in the user.', ['username' => $user]);
-                return $this->json(
-                    ['success' => true, 'message' => 'Login successful.'],
-                    Response::HTTP_OK
-                );
-            }
+        if ($nurse) {
+            $this->logger->info('User successfully logged in.', ['username' => $user]);
+            return $this->json([
+                'success' => true, 
+                'message' => 'Login successful.',
+                'nurse' => $this->mapNurseToArray($nurse)
+            ], Response::HTTP_OK);
         }
 
-        // We found no nurse with the given credentials.
-        $this->logger->warning('We detected an invalid login attempt.', ['username' => $user]);
-        return $this->json(
-            ['success' => false, 'message' => 'Invalid credentials.'],
-            Response::HTTP_UNAUTHORIZED
-        );
+        return $this->json(['success' => false, 'message' => 'Invalid credentials.'], Response::HTTP_UNAUTHORIZED);
+    }
+
+    // Helper to map entity to array
+    private function mapNurseToArray(Nurse $nurse): array
+    {
+        return [
+            'id' => $nurse->getId(),
+            'user' => $nurse->getUser(),
+            'name' => $nurse->getName(),
+            'title' => $nurse->getTitle(),
+            'specialty' => $nurse->getSpecialty(),
+            'description' => $nurse->getDescription(),
+            'location' => $nurse->getLocation(),
+            'availability' => $nurse->getAvailability(),
+            'image' => $nurse->getImage(),
+        ];
     }
 }
