@@ -127,6 +127,36 @@ final class NurseController extends AbstractController
         return $this->json(['success' => false, 'message' => 'Invalid credentials.'], Response::HTTP_UNAUTHORIZED);
     }
 
+    // Update an existing nurse
+    #[Route('/update/{id}', name: 'nurse_update', methods: ['PUT', 'PATCH'])]
+    public function update(int $id, Request $request): JsonResponse
+    {
+        $nurse = $this->nurseRepository->find($id);
+
+        if (!$nurse) {
+            return $this->json(['error' => 'Nurse not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (isset($data['name'])) $nurse->setName($data['name']);
+        if (isset($data['title'])) $nurse->setTitle($data['title']);
+        if (isset($data['specialty'])) $nurse->setSpecialty($data['specialty']);
+        if (isset($data['description'])) $nurse->setDescription($data['description']);
+        if (isset($data['location'])) $nurse->setLocation($data['location']);
+        if (isset($data['availability'])) $nurse->setAvailability($data['availability']);
+        if (isset($data['image'])) $nurse->setImage($data['image']);
+        if (isset($data['pw']) && !empty($data['pw'])) $nurse->setPw($data['pw']);
+
+        $this->entityManager->flush();
+
+        return $this->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'nurse' => $this->mapNurseToArray($nurse)
+        ], Response::HTTP_OK);
+    }
+
     // Helper to map entity to array
     private function mapNurseToArray(Nurse $nurse): array
     {
