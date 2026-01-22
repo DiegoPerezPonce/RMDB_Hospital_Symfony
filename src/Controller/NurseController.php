@@ -27,6 +27,7 @@ final class NurseController extends AbstractController
         $this->entityManager = $entityManager;
         $this->nurseRepository = $nurseRepository;
         $this->logger = $logger;
+        $this->entityManager = $entityManager;
     }
 
     // Create a new nurse in the database
