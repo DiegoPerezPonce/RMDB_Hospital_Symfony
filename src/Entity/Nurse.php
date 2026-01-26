@@ -29,10 +29,17 @@ class Nurse
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $specialty = null;
 
+<<<<<<< HEAD
     #[ORM\Column(type: 'text', nullable: true, length: 65535)]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
+=======
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $description = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
     private ?string $location = null;
 
     #[ORM\Column(length: 50, nullable: true)]
@@ -90,7 +97,10 @@ class Nurse
     public function setTitle(?string $title): static
     {
         $this->title = $title;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -102,7 +112,10 @@ class Nurse
     public function setSpecialty(?string $specialty): static
     {
         $this->specialty = $specialty;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -114,7 +127,10 @@ class Nurse
     public function setDescription(?string $description): static
     {
         $this->description = $description;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -126,7 +142,10 @@ class Nurse
     public function setLocation(?string $location): static
     {
         $this->location = $location;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -138,7 +157,10 @@ class Nurse
     public function setAvailability(?string $availability): static
     {
         $this->availability = $availability;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -150,7 +172,10 @@ class Nurse
     public function setImage(?string $image): static
     {
         $this->image = $image;
+<<<<<<< HEAD
 
+=======
+>>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 }
