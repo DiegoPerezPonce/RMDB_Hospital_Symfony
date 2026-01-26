@@ -50,6 +50,12 @@ final class NurseController extends AbstractController
         $nurse->setPw($data['pw']); // Storing plain text password as per original logic
         // We use user as name if name is not provided, strictly to ensure we populate the field if required.
         $nurse->setName($data['name'] ?? $data['user']);
+        $nurse->setTitle($data['title'] ?? null);
+        $nurse->setSpecialty($data['specialty'] ?? null);
+        $nurse->setDescription($data['description'] ?? null);
+        $nurse->setLocation($data['location'] ?? null);
+        $nurse->setAvailability($data['availability'] ?? null);
+        $nurse->setImage($data['image'] ?? null);
 
         // We save the new nurse to the database.
         try {
@@ -64,8 +70,51 @@ final class NurseController extends AbstractController
         return $this->json([
             'id' => $nurse->getId(),
             'user' => $nurse->getUser(),
-            'name' => $nurse->getName()
+            'name' => $nurse->getName(),
+            'title' => $nurse->getTitle(),
+            'specialty' => $nurse->getSpecialty(),
+            'description' => $nurse->getDescription(),
+            'location' => $nurse->getLocation(),
+            'availability' => $nurse->getAvailability(),
+            'image' => $nurse->getImage()
         ], Response::HTTP_CREATED);
+    }
+
+    // We retrieve all nurses from the database.
+    // We return a list of all nurses.
+    #[Route('/index', name: 'nurse_getAll', methods: ['GET'])]
+    public function getAll(): JsonResponse
+    {
+        try {
+            $repository = $this->entityManager->getRepository(Nurse::class);
+            $nurses = $repository->findAll();
+
+            $data = [];
+            foreach ($nurses as $nurse) {
+                $data[] = [
+                    'id' => $nurse->getId(),
+                    'user' => $nurse->getUser(),
+                    'name' => $nurse->getName(),
+                    'pw' => $nurse->getPw(),
+                    'title' => $nurse->getTitle(),
+                    'specialty' => $nurse->getSpecialty(),
+                    'description' => $nurse->getDescription(),
+                    'location' => $nurse->getLocation(),
+                    'availability' => $nurse->getAvailability(),
+                    'image' => $nurse->getImage()
+                ];
+            }
+
+            return new JsonResponse(data: $data, status: Response::HTTP_OK);
+        } catch (\Exception $e) {
+            $this->logger->error('Error fetching nurses: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return $this->json([
+                'error' => 'Error fetching nurses from database',
+                'message' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     // We find a nurse by their username from the database.
@@ -84,29 +133,40 @@ final class NurseController extends AbstractController
             'id' => $nurse->getId(),
             'user' => $nurse->getUser(),
             'name' => $nurse->getName(),
-            'pw' => $nurse->getPw()
+            'pw' => $nurse->getPw(),
+            'title' => $nurse->getTitle(),
+            'specialty' => $nurse->getSpecialty(),
+            'description' => $nurse->getDescription(),
+            'location' => $nurse->getLocation(),
+            'availability' => $nurse->getAvailability(),
+            'image' => $nurse->getImage()
         ], Response::HTTP_OK);
     }
 
-    // We retrieve all nurses from the database.
-    // We return a list of all nurses.
-    #[Route('/index', name: 'nurse_getAll', methods: ['GET'])]
-    public function getAll(): JsonResponse
+    // We find a nurse by their ID from the database.
+    // We return nurse data if found, or an error message.
+    #[Route('/{id}', name: 'nurse_find_by_id', methods: ['GET'])]
+    public function findById(int $id): JsonResponse
     {
         $repository = $this->entityManager->getRepository(Nurse::class);
-        $nurses = $repository->findAll();
+        $nurse = $repository->find($id);
 
-        $data = [];
-        foreach ($nurses as $nurse) {
-            $data[] = [
-                'id' => $nurse->getId(),
-                'user' => $nurse->getUser(),
-                'name' => $nurse->getName(),
-                'pw' => $nurse->getPw()
-            ];
+        if (!$nurse) {
+            return $this->json(['error' => 'We could not find the nurse'], Response::HTTP_NOT_FOUND);
         }
 
-        return new JsonResponse(data: $data, status: Response::HTTP_OK);
+        return $this->json([
+            'id' => $nurse->getId(),
+            'user' => $nurse->getUser(),
+            'name' => $nurse->getName(),
+            'pw' => $nurse->getPw(),
+            'title' => $nurse->getTitle(),
+            'specialty' => $nurse->getSpecialty(),
+            'description' => $nurse->getDescription(),
+            'location' => $nurse->getLocation(),
+            'availability' => $nurse->getAvailability(),
+            'image' => $nurse->getImage()
+        ], Response::HTTP_OK);
     }
 
     // We handle user login using the database.
