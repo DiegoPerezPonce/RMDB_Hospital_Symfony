@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * NurseRepository – RMDB Hospital
+ *
+ * We provide custom queries for the Nurse entity. We use findFiltered to
+ * search by name (or user), specialty, location, and availability, ignoring
+ * "All Specialties" and "Any" when appropriate.
+ */
+
 namespace App\Repository;
 
 use App\Entity\Nurse;
@@ -17,6 +25,7 @@ class NurseRepository extends ServiceEntityRepository
     }
 
     /**
+     * We filter nurses by name (LIKE on name/user), specialty, location, and availability.
      * @return Nurse[]
      */
     public function findFiltered(?string $name, ?string $specialty, ?string $location, ?string $availability): array

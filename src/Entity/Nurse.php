@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * Nurse entity – RMDB Hospital
+ *
+ * We map the nurse table used by our backend. We align columns with the
+ * filess.io database: id, user, name, pw, title, specialty, description,
+ * location, availability, image.
+ */
+
 namespace App\Entity;
 
 use App\Repository\NurseRepository;
@@ -14,37 +22,39 @@ class Nurse
     #[ORM\Column]
     private ?int $id = null;
 
+    /** We store the login username. */
     #[ORM\Column(length: 50)]
     private ?string $user = null;
 
+    /** We store the display name. */
     #[ORM\Column(length: 70)]
     private ?string $name = null;
 
+    /** We store the password (plain text in this project). */
     #[ORM\Column(length: 20)]
     private ?string $pw = null;
 
+    /** We store the professional title. */
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $title = null;
 
+    /** We store the specialty. */
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $specialty = null;
 
-<<<<<<< HEAD
-    #[ORM\Column(type: 'text', nullable: true, length: 65535)]
-    private ?string $description = null;
-
-    #[ORM\Column(length: 255, nullable: true)]
-=======
+    /** We store the profile description. */
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $description = null;
 
-    #[ORM\Column(length: 100, nullable: true)]
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
+    /** We store the location. */
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $location = null;
 
+    /** We store the availability. */
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $availability = null;
 
+    /** We store the profile image path or URL. */
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $image = null;
 
@@ -61,7 +71,6 @@ class Nurse
     public function setUser(?string $user): static
     {
         $this->user = $user;
-
         return $this;
     }
 
@@ -73,7 +82,6 @@ class Nurse
     public function setName(?string $name): static
     {
         $this->name = $name;
-
         return $this;
     }
 
@@ -85,7 +93,6 @@ class Nurse
     public function setPw(?string $pw): static
     {
         $this->pw = $pw;
-
         return $this;
     }
 
@@ -97,10 +104,6 @@ class Nurse
     public function setTitle(?string $title): static
     {
         $this->title = $title;
-<<<<<<< HEAD
-
-=======
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -112,10 +115,6 @@ class Nurse
     public function setSpecialty(?string $specialty): static
     {
         $this->specialty = $specialty;
-<<<<<<< HEAD
-
-=======
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -127,10 +126,6 @@ class Nurse
     public function setDescription(?string $description): static
     {
         $this->description = $description;
-<<<<<<< HEAD
-
-=======
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -142,10 +137,6 @@ class Nurse
     public function setLocation(?string $location): static
     {
         $this->location = $location;
-<<<<<<< HEAD
-
-=======
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -157,10 +148,6 @@ class Nurse
     public function setAvailability(?string $availability): static
     {
         $this->availability = $availability;
-<<<<<<< HEAD
-
-=======
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 
@@ -172,10 +159,6 @@ class Nurse
     public function setImage(?string $image): static
     {
         $this->image = $image;
-<<<<<<< HEAD
-
-=======
->>>>>>> 23b2ef7c990c66734fd43de9e7f34fdccf055445
         return $this;
     }
 }
